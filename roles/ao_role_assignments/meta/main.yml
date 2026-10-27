@@ -1,0 +1,21 @@
+---
+galaxy_info:
+  role_name: ao_role_assignments
+  author: Zack LeBlanc
+  description: An Ansible Role to create/remove Role Assignments on Automation Orchestrator.
+
+  license: GPL-3.0-or-later
+
+  min_ansible_version: 2.16.0
+
+  platforms:
+    - name: EL
+      versions:
+        - all
+
+  galaxy_tags: []
+
+dependencies:
+  - role: global_vars
+  - role: ao_auth
+...

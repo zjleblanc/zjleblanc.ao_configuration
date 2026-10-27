@@ -1,0 +1,52 @@
+---
+description: Ansible changelog fragment conventions for this collection (antsibull-changelog, matching infra.aap_configuration)
+globs: changelogs/**,CHANGELOG.rst
+alwaysApply: false
+---
+
+# Changelog Fragments
+
+This collection uses the standard Ansible `antsibull-changelog` fragment workflow,
+matching [infra.aap_configuration](https://github.com/redhat-cop/infra.aap_configuration)
+exactly. Do **not** maintain a hand-written `CHANGELOG.md` — `changelogs/` and the
+generated `CHANGELOG.rst` are the single source of truth.
+
+## Workflow
+
+1. For every user-facing change (new role, new variable, bugfix, breaking change),
+   add one fragment file to `changelogs/fragments/<short-slug>.yml`.
+2. Fragment filename: short kebab-case slug describing the change (e.g.
+   `fix-settings-optimistic-locking.yml`, `add-ao-tools-role.yml`). No numeric
+   issue/PR prefix is required unless one exists.
+3. Fragment content is a dict keyed by one of the sections in
+   `changelogs/config.yaml` (`major_changes`, `minor_changes`, `breaking_changes`,
+   `deprecated_features`, `removed_features`, `security_fixes`, `bugfixes`,
+   `known_issues`), each a list of one or more plain-English bullet strings:
+
+   ```yaml
+   minor_changes:
+     - ao_tools - add support for updating tool descriptions on PATCH (https://github.com/zjleblanc/zjleblanc.ao_configuration/pull/NN).
+   ```
+
+   For a new release's headline summary, use `release_summary` instead (a single
+   string, not a list) — see `changelogs/fragments/initial-release.yml` for the
+   pattern used at `0.1.0`.
+4. Validate fragments with `antsibull-changelog lint` before committing.
+5. **Never hand-edit `changelogs/changelog.yaml` or `CHANGELOG.rst` directly.**
+   When cutting a release, run:
+
+   ```
+   antsibull-changelog release --version <X.Y.Z>
+   ```
+
+   This consumes all pending fragments, updates `changelogs/changelog.yaml`, and
+   regenerates `CHANGELOG.rst`. Fragments are deleted after a release
+   (`keep_fragments: false` in `changelogs/config.yaml`), so re-add a
+   `changelogs/fragments/.gitkeep` placeholder if the directory becomes empty.
+
+## Do not
+
+- Do not create or maintain a separate `CHANGELOG.md`.
+- Do not write directly into `changelogs/changelog.yaml`'s `releases:` key by hand.
+- Do not bump the version in `galaxy.yml` without also running
+  `antsibull-changelog release` for the same version.

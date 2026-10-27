@@ -1,0 +1,106 @@
+---
+# Tools are auto-discovered from enabled Integrations -- there is no create/delete here,
+# only enable/disable and metadata updates (PATCH) against tools that already exist.
+- name: Manage AO Tools Block
+  vars:
+    ansible_async_dir: "{{ ao_configuration_async_dir }}"
+  no_log: "{{ ao_configuration_tools_secure_logging }}"
+  block:
+    - name: Look up existing Tools
+      ansible.builtin.uri:
+        url: "{{ ao_hostname }}/api/v1/tools?limit={{ ao_configuration_tools_lookup_limit }}"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ ao_access_token }}"
+        validate_certs: "{{ ao_validate_certs }}"
+        timeout: "{{ ao_request_timeout }}"
+        status_code: [200]
+      register: __ao_tools_lookup
+      changed_when: false
+
+    - name: Fail for Tools that were not found (tools are auto-discovered, not created)
+      ansible.builtin.fail:
+        msg: >-
+          Tool '{{ __ao_tools_item.name }}' was not found. Tools are auto-discovered from enabled
+          Integrations -- ensure the owning integration exists and is enabled before managing this tool.
+      loop: "{{ ao_tools }}"
+      loop_control:
+        loop_var: __ao_tools_item
+        label: "Check Tool {{ __ao_tools_item.name }} exists"
+      when: >-
+        (__ao_tools_lookup.json[ao_configuration_tools_list_key] | default([]))
+        | selectattr('name', 'equalto', __ao_tools_item.name) | list | length == 0
+
+    - name: Managing Tools
+      ansible.builtin.uri:
+        url: "{{ ao_hostname }}/api/v1/tools/{{ __existing.id }}"
+        method: PATCH
+        headers:
+          Authorization: "Bearer {{ ao_access_token }}"
+          Content-Type: application/json
+        body_format: json
+        body:
+          enabled: "{{ __ao_tools_item.enabled | default(true) }}"
+          description: "{{ __ao_tools_item.description | default(__existing.description, true) }}"
+        status_code: [200]
+        validate_certs: "{{ ao_validate_certs }}"
+        timeout: "{{ ao_request_timeout }}"
+      loop: "{{ ao_tools }}"
+      loop_control:
+        loop_var: __ao_tools_item
+        label: "{{ __operation.verb }} Tool {{ __ao_tools_item.name }}"
+        pause: "{{ ao_configuration_tools_loop_delay }}"
+      async: "{{ ansible_check_mode | ternary(0, 1000) }}"
+      poll: 0
+      register: __tools_job_async
+      changed_when: (__tools_job_async.changed if ansible_check_mode else false)
+      vars:
+        __operation: "{{ operation_translate[__ao_tools_item.enabled | default(true) | ternary('enabled', 'disabled')] }}"
+        __existing: >-
+          {{ (__ao_tools_lookup.json[ao_configuration_tools_list_key] | default([]))
+             | selectattr('name', 'equalto', __ao_tools_item.name) | list | first | default({'id': None}) }}
+
+    - name: Flag for errors (check mode only)
+      ansible.builtin.set_fact:
+        error_flag: true
+      when: ansible_check_mode and __tools_job_async.failed is defined and __tools_job_async.failed
+
+    - name: Managing Tools | Wait for finish the tool management
+      when:
+        - not ansible_check_mode
+        - __tools_job_async_results_item.ansible_job_id is defined
+      ansible.builtin.include_role:
+        name: zjleblanc.ao_configuration.collect_async_status
+      loop: "{{ __tools_job_async.results }}"
+      loop_control:
+        loop_var: __tools_job_async_results_item
+        label: >-
+          {{ __operation.verb }} Tool {{ __tools_job_async_results_item.__ao_tools_item.name }}
+          | Wait for finish the tool {{ __operation.action }}
+      vars:
+        cas_secure_logging: "{{ ao_configuration_tools_secure_logging }}"
+        cas_async_delay: "{{ ao_configuration_tools_async_delay }}"
+        cas_async_retries: "{{ ao_configuration_tools_async_retries }}"
+        cas_job_async_results_item: "{{ __tools_job_async_results_item }}"
+        cas_register_subvar: ao_tools
+        cas_error_list_var_name: "ao_tools_errors"
+        __operation: >-
+          {{ operation_translate[__tools_job_async_results_item.__ao_tools_item.enabled
+             | default(true) | ternary('enabled', 'disabled')] }}
+        cas_object_label: >-
+          {{ __operation.verb }} Tool {{ __tools_job_async_results_item.__ao_tools_item.name }}
+          | Wait for finish the tool {{ __operation.action }}
+
+  always:
+    - name: Cleanup async results files
+      when:
+        - not ansible_check_mode
+        - __tools_job_async_results_item.ansible_job_id is defined
+      ansible.builtin.async_status:
+        jid: "{{ __tools_job_async_results_item.ansible_job_id }}"
+        mode: cleanup
+      loop: "{{ __tools_job_async.results }}"
+      loop_control:
+        loop_var: __tools_job_async_results_item
+        label: "Cleaning up job results file: {{ __tools_job_async_results_item.results_file | default('Unknown') }}"
+...

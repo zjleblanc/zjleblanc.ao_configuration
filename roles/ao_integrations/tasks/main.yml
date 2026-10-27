@@ -1,0 +1,101 @@
+---
+- name: Manage AO Integrations Block
+  vars:
+    ansible_async_dir: "{{ ao_configuration_async_dir }}"
+  no_log: "{{ ao_configuration_integrations_secure_logging }}"
+  block:
+    - name: Look up existing Integrations
+      ansible.builtin.uri:
+        url: "{{ ao_hostname }}/api/v1/integrations?limit={{ ao_configuration_integrations_lookup_limit }}"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ ao_access_token }}"
+        validate_certs: "{{ ao_validate_certs }}"
+        timeout: "{{ ao_request_timeout }}"
+        status_code: [200]
+      register: __ao_integrations_lookup
+      changed_when: false
+
+    - name: Managing Integrations
+      ansible.builtin.uri:
+        url: "{{ __url }}"
+        method: "{{ __method }}"
+        headers:
+          Authorization: "Bearer {{ ao_access_token }}"
+          Content-Type: application/json
+        body_format: json
+        body: "{{ omit if __method == 'DELETE' else __body }}"
+        status_code: "{{ [204] if __method == 'DELETE' else ([201] if __method == 'POST' else [200]) }}"
+        validate_certs: "{{ ao_validate_certs }}"
+        timeout: "{{ ao_request_timeout }}"
+      when: not (__state == 'absent' and __existing is not defined)
+      loop: "{{ ao_integrations }}"
+      loop_control:
+        loop_var: __ao_integrations_item
+        label: "{{ __operation.verb }} Integration {{ __ao_integrations_item.name }}"
+        pause: "{{ ao_configuration_integrations_loop_delay }}"
+      async: "{{ ansible_check_mode | ternary(0, 1000) }}"
+      poll: 0
+      register: __integrations_job_async
+      changed_when: (__integrations_job_async.changed if ansible_check_mode else false)
+      vars:
+        __operation: "{{ operation_translate[__ao_integrations_item.state | default(ao_state) | default('present')] }}"
+        __existing: >-
+          {{ (__ao_integrations_lookup.json[ao_configuration_integrations_list_key] | default([]))
+             | selectattr('name', 'equalto', __ao_integrations_item.name) | list | first | default(omit) }}
+        __state: "{{ __ao_integrations_item.state | default(ao_state | default('present')) }}"
+        __method: "{{ 'DELETE' if __state == 'absent' else ('PATCH' if __existing is defined else 'POST') }}"
+        __url: "{{ ao_hostname ~ '/api/v1/integrations' ~ ('/' ~ __existing.id if __existing is defined else '') }}"
+        __body:
+          name: "{{ __ao_integrations_item.name | mandatory }}"
+          description: "{{ __ao_integrations_item.description | default('', true) }}"
+          integration_type: "{{ __ao_integrations_item.integration_type | mandatory }}"
+          project_id: "{{ __ao_integrations_item.project_id | default(omit, true) }}"
+          credential_id: "{{ __ao_integrations_item.credential_id | default(omit, true) }}"
+          configuration: "{{ __ao_integrations_item.configuration | default({}, true) }}"
+          enabled: "{{ __ao_integrations_item.enabled | default(true) }}"
+
+    - name: Flag for errors (check mode only)
+      ansible.builtin.set_fact:
+        error_flag: true
+      when: ansible_check_mode and __integrations_job_async.failed is defined and __integrations_job_async.failed
+
+    - name: Managing Integrations | Wait for finish the integration management
+      when:
+        - not ansible_check_mode
+        - __integrations_job_async_results_item.ansible_job_id is defined
+      ansible.builtin.include_role:
+        name: zjleblanc.ao_configuration.collect_async_status
+      loop: "{{ __integrations_job_async.results }}"
+      loop_control:
+        loop_var: __integrations_job_async_results_item
+        label: >-
+          {{ __operation.verb }} Integration {{ __integrations_job_async_results_item.__ao_integrations_item.name }}
+          | Wait for finish the integration {{ __operation.action }}
+      vars:
+        cas_secure_logging: "{{ ao_configuration_integrations_secure_logging }}"
+        cas_async_delay: "{{ ao_configuration_integrations_async_delay }}"
+        cas_async_retries: "{{ ao_configuration_integrations_async_retries }}"
+        cas_job_async_results_item: "{{ __integrations_job_async_results_item }}"
+        cas_register_subvar: ao_integrations
+        cas_error_list_var_name: "ao_integrations_errors"
+        __operation: >-
+          {{ operation_translate[__integrations_job_async_results_item.__ao_integrations_item.state
+             | default(ao_state) | default('present')] }}
+        cas_object_label: >-
+          {{ __operation.verb }} Integration {{ __integrations_job_async_results_item.__ao_integrations_item.name }}
+          | Wait for finish the integration {{ __operation.action }}
+
+  always:
+    - name: Cleanup async results files
+      when:
+        - not ansible_check_mode
+        - __integrations_job_async_results_item.ansible_job_id is defined
+      ansible.builtin.async_status:
+        jid: "{{ __integrations_job_async_results_item.ansible_job_id }}"
+        mode: cleanup
+      loop: "{{ __integrations_job_async.results }}"
+      loop_control:
+        loop_var: __integrations_job_async_results_item
+        label: "Cleaning up job results file: {{ __integrations_job_async_results_item.results_file | default('Unknown') }}"
+...

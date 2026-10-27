@@ -1,0 +1,87 @@
+---
+- name: Manage AO Settings Block
+  vars:
+    ansible_async_dir: "{{ ao_configuration_async_dir }}"
+  no_log: "{{ ao_configuration_settings_secure_logging }}"
+  block:
+    - name: Look up current version for each setting
+      ansible.builtin.uri:
+        url: "{{ ao_hostname }}/api/v1/settings/{{ __ao_settings_lookup_item.key | urlencode }}"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ ao_access_token }}"
+        validate_certs: "{{ ao_validate_certs }}"
+        timeout: "{{ ao_request_timeout }}"
+        status_code: [200]
+      loop: "{{ ao_settings }}"
+      loop_control:
+        loop_var: __ao_settings_lookup_item
+        label: "Look up setting {{ __ao_settings_lookup_item.key | mandatory }}"
+      register: __ao_settings_lookup
+      changed_when: false
+
+    - name: Managing Settings
+      ansible.builtin.uri:
+        url: "{{ ao_hostname }}/api/v1/settings/{{ __ao_settings_item.key | urlencode }}"
+        method: PATCH
+        headers:
+          Authorization: "Bearer {{ ao_access_token }}"
+          Content-Type: application/json
+        body_format: json
+        body:
+          value: "{{ __ao_settings_item.value }}"
+          expected_version: "{{ __expected_version }}"
+        status_code: [200]
+        validate_certs: "{{ ao_validate_certs }}"
+        timeout: "{{ ao_request_timeout }}"
+      loop: "{{ ao_settings }}"
+      loop_control:
+        loop_var: __ao_settings_item
+        index_var: __ao_settings_item_index
+        label: "Update setting {{ __ao_settings_item.key }}"
+        pause: "{{ ao_configuration_settings_loop_delay }}"
+      async: "{{ ansible_check_mode | ternary(0, 1000) }}"
+      poll: 0
+      register: __settings_job_async
+      changed_when: (__settings_job_async.changed if ansible_check_mode else false)
+      vars:
+        __expected_version: "{{ __ao_settings_item.expected_version
+                                 | default(__ao_settings_lookup.results[__ao_settings_item_index].json.version) }}"
+
+    - name: Flag for errors (check mode only)
+      ansible.builtin.set_fact:
+        error_flag: true
+      when: ansible_check_mode and __settings_job_async.failed is defined and __settings_job_async.failed
+
+    - name: Managing Settings | Wait for finish the settings management
+      when:
+        - not ansible_check_mode
+        - __settings_job_async_results_item.ansible_job_id is defined
+      ansible.builtin.include_role:
+        name: zjleblanc.ao_configuration.collect_async_status
+      loop: "{{ __settings_job_async.results }}"
+      loop_control:
+        loop_var: __settings_job_async_results_item
+        label: "Update setting {{ __settings_job_async_results_item.__ao_settings_item.key }} | Wait for finish the setting update"
+      vars:
+        cas_secure_logging: "{{ ao_configuration_settings_secure_logging }}"
+        cas_async_delay: "{{ ao_configuration_settings_async_delay }}"
+        cas_async_retries: "{{ ao_configuration_settings_async_retries }}"
+        cas_job_async_results_item: "{{ __settings_job_async_results_item }}"
+        cas_register_subvar: ao_settings
+        cas_error_list_var_name: "ao_settings_errors"
+        cas_object_label: "Update setting {{ __settings_job_async_results_item.__ao_settings_item.key }} | Wait for finish the setting update"
+
+  always:
+    - name: Cleanup async results files
+      when:
+        - not ansible_check_mode
+        - __settings_job_async_results_item.ansible_job_id is defined
+      ansible.builtin.async_status:
+        jid: "{{ __settings_job_async_results_item.ansible_job_id }}"
+        mode: cleanup
+      loop: "{{ __settings_job_async.results }}"
+      loop_control:
+        loop_var: __settings_job_async_results_item
+        label: "Cleaning up job results file: {{ __settings_job_async_results_item.results_file | default('Unknown') }}"
+...

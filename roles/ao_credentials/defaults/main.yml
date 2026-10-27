@@ -1,0 +1,11 @@
+---
+# a list of dicts describing AO credentials
+ao_credentials: []
+ao_configuration_credentials_secure_logging: "{{ ao_configuration_secure_logging | default(true) }}"
+ao_configuration_credentials_async_retries: "{{ ao_configuration_async_retries | default(50) }}"
+ao_configuration_credentials_async_delay: "{{ ao_configuration_async_delay | default(1) }}"
+ao_configuration_credentials_loop_delay: "{{ ao_configuration_loop_delay | default(0) }}"
+ao_configuration_credentials_lookup_limit: 100
+ao_configuration_credentials_list_key: items
+ao_configuration_async_dir:
+...

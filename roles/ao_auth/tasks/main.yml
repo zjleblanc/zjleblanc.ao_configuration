@@ -1,0 +1,67 @@
+---
+- name: Determine whether a cached AO access token is still valid
+  ansible.builtin.set_fact:
+    __ao_auth_token_valid: "{{ (ao_access_token | default('', true) | length > 0)
+                                 and ((ao_access_token_expiry | default(0, true) | int) > (now(utc=true, fmt='%s') | int)) }}"
+  no_log: "{{ ao_configuration_auth_secure_logging }}"
+
+- name: Acquire AO access token via OAuth2 client_credentials grant (service account)
+  when:
+    - not __ao_auth_token_valid
+    - (ao_client_id | default('', true) | length) > 0
+    - (ao_client_secret | default('', true) | length) > 0
+  no_log: "{{ ao_configuration_auth_secure_logging }}"
+  block:
+    - name: Request AO access token (client_credentials grant)
+      ansible.builtin.uri:
+        url: "{{ ao_hostname }}/api/v1/auth/token"
+        method: POST
+        headers:
+          Content-Type: application/x-www-form-urlencoded
+        body_format: form-urlencoded
+        body:
+          grant_type: client_credentials
+          client_id: "{{ ao_client_id }}"
+          client_secret: "{{ ao_client_secret }}"
+        status_code: [200]
+        validate_certs: "{{ ao_validate_certs }}"
+        timeout: "{{ ao_request_timeout }}"
+      register: __ao_auth_token_response
+
+    - name: Cache AO access token (client_credentials grant)
+      ansible.builtin.set_fact:
+        ao_access_token: "{{ __ao_auth_token_response.json.access_token }}"
+        ao_access_token_expiry: >-
+          {{ (now(utc=true, fmt='%s') | int)
+             + (__ao_auth_token_response.json.expires_in | default(300) | int)
+             - (ao_auth_safety_buffer_seconds | int) }}
+
+- name: Acquire AO access token via username/password login
+  when:
+    - not __ao_auth_token_valid
+    - not ((ao_client_id | default('', true) | length) > 0 and (ao_client_secret | default('', true) | length) > 0)
+  no_log: "{{ ao_configuration_auth_secure_logging }}"
+  block:
+    - name: Request AO access token (login)
+      ansible.builtin.uri:
+        url: "{{ ao_hostname }}/api/v1/auth/login"
+        method: POST
+        headers:
+          Content-Type: application/json
+        body_format: json
+        body:
+          username: "{{ ao_username | mandatory }}"
+          password: "{{ ao_password | mandatory }}"
+        status_code: [200]
+        validate_certs: "{{ ao_validate_certs }}"
+        timeout: "{{ ao_request_timeout }}"
+      register: __ao_auth_login_response
+
+    - name: Cache AO access token (login)
+      ansible.builtin.set_fact:
+        ao_access_token: "{{ __ao_auth_login_response.json.access_token }}"
+        ao_access_token_expiry: >-
+          {{ (now(utc=true, fmt='%s') | int)
+             + (__ao_auth_login_response.json.expires_in | default(300) | int)
+             - (ao_auth_safety_buffer_seconds | int) }}
+...

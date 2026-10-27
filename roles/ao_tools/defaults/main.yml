@@ -1,0 +1,11 @@
+---
+# a list of dicts describing AO tools (update-only, tools are auto-discovered from integrations)
+ao_tools: []
+ao_configuration_tools_secure_logging: "{{ ao_configuration_secure_logging | default(false) }}"
+ao_configuration_tools_async_retries: "{{ ao_configuration_async_retries | default(50) }}"
+ao_configuration_tools_async_delay: "{{ ao_configuration_async_delay | default(1) }}"
+ao_configuration_tools_loop_delay: "{{ ao_configuration_loop_delay | default(0) }}"
+ao_configuration_tools_lookup_limit: 200
+ao_configuration_tools_list_key: items
+ao_configuration_async_dir:
+...

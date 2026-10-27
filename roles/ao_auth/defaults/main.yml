@@ -1,0 +1,14 @@
+---
+ao_hostname: http://localhost:8000
+ao_validate_certs: true
+ao_request_timeout: 10
+ao_username:
+ao_password:
+ao_client_id:
+ao_client_secret:
+ao_access_token:
+ao_access_token_expiry:
+# Refresh this many seconds before the token's real expiry to avoid races.
+ao_auth_safety_buffer_seconds: 30
+ao_configuration_auth_secure_logging: "{{ ao_configuration_secure_logging | default(true) }}"
+...

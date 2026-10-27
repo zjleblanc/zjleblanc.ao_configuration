@@ -1,0 +1,25 @@
+---
+namespace: zjleblanc
+name: ao_configuration
+version: 0.1.0
+description: A collection of roles to manage Automation Orchestrator (AO) with code
+readme: README.md
+authors:
+  - Zack LeBlanc
+repository: https://github.com/zjleblanc/zjleblanc.ao_configuration
+issues: https://github.com/zjleblanc/zjleblanc.ao_configuration/issues
+build_ignore:
+  - galaxy.yml.j2
+  - "*.tar.gz"
+  - tests/*
+license:
+  - GPL-3.0-or-later
+tags:
+  - automation_orchestrator
+  - ao
+  - collection
+  - ao_configuration
+  - configuration
+  - infrastructure
+dependencies: {}
+...

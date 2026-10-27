@@ -1,0 +1,18 @@
+---
+- name: Playbook to configure Automation Orchestrator post installation
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Include vars from configs directory
+      ansible.builtin.include_vars:
+        dir: "{{ ao_configs_dir | default((lookup('env', 'AO_CONFIGS_DIR') == '') | ternary('./configs', lookup('env', 'AO_CONFIGS_DIR'))) }}"
+        ignore_unknown_extensions: true
+        extensions: [yml]
+      tags:
+        - always
+
+    - name: Call dispatch role
+      ansible.builtin.include_role:
+        name: zjleblanc.ao_configuration.dispatch
+...

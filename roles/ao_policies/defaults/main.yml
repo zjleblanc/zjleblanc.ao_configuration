@@ -1,0 +1,11 @@
+---
+# a list of dicts describing AO policies
+ao_policies: []
+ao_configuration_policies_secure_logging: "{{ ao_configuration_secure_logging | default(false) }}"
+ao_configuration_policies_async_retries: "{{ ao_configuration_async_retries | default(50) }}"
+ao_configuration_policies_async_delay: "{{ ao_configuration_async_delay | default(1) }}"
+ao_configuration_policies_loop_delay: "{{ ao_configuration_loop_delay | default(0) }}"
+ao_configuration_policies_lookup_limit: 100
+ao_configuration_policies_list_key: items
+ao_configuration_async_dir:
+...

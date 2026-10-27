@@ -1,0 +1,16 @@
+---
+ao_configuration_all_vars:
+  - ao_settings
+  - ao_identity_providers
+  - ao_projects
+  - ao_credentials
+  - ao_users
+  - ao_user_groups
+  - ao_service_accounts
+  - ao_roles
+  - ao_policies
+  - ao_role_assignments
+  - ao_integrations
+  - ao_workflows
+  - ao_tools
+...

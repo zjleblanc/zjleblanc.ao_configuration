@@ -1,0 +1,11 @@
+---
+# a list of dicts describing AO local users
+ao_users: []
+ao_configuration_users_secure_logging: "{{ ao_configuration_secure_logging | default(true) }}"
+ao_configuration_users_async_retries: "{{ ao_configuration_async_retries | default(50) }}"
+ao_configuration_users_async_delay: "{{ ao_configuration_async_delay | default(1) }}"
+ao_configuration_users_loop_delay: "{{ ao_configuration_loop_delay | default(0) }}"
+ao_configuration_users_lookup_limit: 100
+ao_configuration_users_list_key: items
+ao_configuration_async_dir:
+...

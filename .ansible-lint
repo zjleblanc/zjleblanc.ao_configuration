@@ -1,0 +1,16 @@
+---
+profile: production
+
+exclude_paths:
+  - changelogs/
+  - .github/
+  - tests/
+
+skip_list:
+  - yaml[line-length]
+  - jinja[spacing]
+  - var-naming[no-role-prefix]
+
+warn_list:
+  - experimental
+...

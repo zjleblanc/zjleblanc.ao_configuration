@@ -1,0 +1,106 @@
+---
+- name: Manage AO Service Accounts Block
+  vars:
+    ansible_async_dir: "{{ ao_configuration_async_dir }}"
+  no_log: "{{ ao_configuration_service_accounts_secure_logging }}"
+  block:
+    - name: Look up existing Service Accounts
+      ansible.builtin.uri:
+        url: "{{ ao_hostname }}/api/v1/service_accounts?limit={{ ao_configuration_service_accounts_lookup_limit }}"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ ao_access_token }}"
+        validate_certs: "{{ ao_validate_certs }}"
+        timeout: "{{ ao_request_timeout }}"
+        status_code: [200]
+      register: __ao_service_accounts_lookup
+      changed_when: false
+
+    # Enabling/disabling an existing service account is handled via dedicated
+    # /enable and /disable sub-endpoints instead of a field on the main PATCH body.
+    - name: Managing Service Accounts
+      ansible.builtin.uri:
+        url: "{{ __url }}"
+        method: "{{ __method }}"
+        headers:
+          Authorization: "Bearer {{ ao_access_token }}"
+          Content-Type: application/json
+        body_format: json
+        body: "{{ omit if __method in ['DELETE', 'POST'] and __existing is defined else __body }}"
+        status_code: "{{ [204] if __method == 'DELETE' else ([201] if __method == 'POST' and __existing is not defined else [200]) }}"
+        validate_certs: "{{ ao_validate_certs }}"
+        timeout: "{{ ao_request_timeout }}"
+      when: not (__state == 'absent' and __existing is not defined)
+      loop: "{{ ao_service_accounts }}"
+      loop_control:
+        loop_var: __ao_service_accounts_item
+        label: "{{ __operation.verb }} Service Account {{ __ao_service_accounts_item.name }}"
+        pause: "{{ ao_configuration_service_accounts_loop_delay }}"
+      async: "{{ ansible_check_mode | ternary(0, 1000) }}"
+      poll: 0
+      register: __service_accounts_job_async
+      changed_when: (__service_accounts_job_async.changed if ansible_check_mode else false)
+      vars:
+        __operation: "{{ operation_translate[__ao_service_accounts_item.state | default(ao_state) | default('present')] }}"
+        __existing: >-
+          {{ (__ao_service_accounts_lookup.json[ao_configuration_service_accounts_list_key] | default([]))
+             | selectattr('name', 'equalto', __ao_service_accounts_item.name) | list | first | default(omit) }}
+        __state: "{{ __ao_service_accounts_item.state | default(ao_state | default('present')) }}"
+        __method: >-
+          {{ 'DELETE' if __state == 'absent'
+             else ('POST' if (__state in ['enabled', 'disabled'] and __existing is defined)
+             else ('PATCH' if __existing is defined else 'POST')) }}
+        __url: >-
+          {{ (ao_hostname ~ '/api/v1/service_accounts/' ~ __existing.id ~ '/' ~ __state)
+             if (__state in ['enabled', 'disabled'] and __existing is defined)
+             else (ao_hostname ~ '/api/v1/service_accounts' ~ ('/' ~ __existing.id if __existing is defined else '')) }}
+        __body:
+          name: "{{ __ao_service_accounts_item.name | mandatory }}"
+          description: "{{ __ao_service_accounts_item.description | default('', true) }}"
+          project_id: "{{ __ao_service_accounts_item.project_id | default(omit, true) }}"
+          is_enabled: "{{ __ao_service_accounts_item.state | default(ao_state, true) != 'disabled' }}"
+
+    - name: Flag for errors (check mode only)
+      ansible.builtin.set_fact:
+        error_flag: true
+      when: ansible_check_mode and __service_accounts_job_async.failed is defined and __service_accounts_job_async.failed
+
+    - name: Managing Service Accounts | Wait for finish the service account management
+      when:
+        - not ansible_check_mode
+        - __service_accounts_job_async_results_item.ansible_job_id is defined
+      ansible.builtin.include_role:
+        name: zjleblanc.ao_configuration.collect_async_status
+      loop: "{{ __service_accounts_job_async.results }}"
+      loop_control:
+        loop_var: __service_accounts_job_async_results_item
+        label: >-
+          {{ __operation.verb }} Service Account {{ __service_accounts_job_async_results_item.__ao_service_accounts_item.name }}
+          | Wait for finish the service account {{ __operation.action }}
+      vars:
+        cas_secure_logging: "{{ ao_configuration_service_accounts_secure_logging }}"
+        cas_async_delay: "{{ ao_configuration_service_accounts_async_delay }}"
+        cas_async_retries: "{{ ao_configuration_service_accounts_async_retries }}"
+        cas_job_async_results_item: "{{ __service_accounts_job_async_results_item }}"
+        cas_register_subvar: ao_service_accounts
+        cas_error_list_var_name: "ao_service_accounts_errors"
+        __operation: >-
+          {{ operation_translate[__service_accounts_job_async_results_item.__ao_service_accounts_item.state
+             | default(ao_state) | default('present')] }}
+        cas_object_label: >-
+          {{ __operation.verb }} Service Account {{ __service_accounts_job_async_results_item.__ao_service_accounts_item.name }}
+          | Wait for finish the service account {{ __operation.action }}
+
+  always:
+    - name: Cleanup async results files
+      when:
+        - not ansible_check_mode
+        - __service_accounts_job_async_results_item.ansible_job_id is defined
+      ansible.builtin.async_status:
+        jid: "{{ __service_accounts_job_async_results_item.ansible_job_id }}"
+        mode: cleanup
+      loop: "{{ __service_accounts_job_async.results }}"
+      loop_control:
+        loop_var: __service_accounts_job_async_results_item
+        label: "Cleaning up job results file: {{ __service_accounts_job_async_results_item.results_file | default('Unknown') }}"
+...

@@ -1,0 +1,74 @@
+---
+dispatch_include_wildcard_vars: false
+
+# Ordered so that dependencies (e.g. projects before credentials/workflows that
+# reference them) are satisfied when everything is applied in a single run.
+ao_configuration_dispatcher_roles:
+  - role: ao_settings
+    var: ao_settings
+    tags:
+      - settings
+      - ao_settings
+  - role: ao_identity_providers
+    var: ao_identity_providers
+    tags:
+      - identity_providers
+      - ao_identity_providers
+  - role: ao_projects
+    var: ao_projects
+    tags:
+      - projects
+      - ao_projects
+  - role: ao_credentials
+    var: ao_credentials
+    tags:
+      - credentials
+      - ao_credentials
+  - role: ao_users
+    var: ao_users
+    tags:
+      - users
+      - ao_users
+  - role: ao_user_groups
+    var: ao_user_groups
+    tags:
+      - user_groups
+      - ao_user_groups
+  - role: ao_service_accounts
+    var: ao_service_accounts
+    tags:
+      - service_accounts
+      - ao_service_accounts
+  - role: ao_roles
+    var: ao_roles
+    tags:
+      - roles
+      - ao_roles
+  - role: ao_policies
+    var: ao_policies
+    tags:
+      - policies
+      - ao_policies
+  - role: ao_role_assignments
+    var: ao_role_assignments
+    tags:
+      - role_assignments
+      - ao_role_assignments
+  - role: ao_integrations
+    var: ao_integrations
+    tags:
+      - integrations
+      - ao_integrations
+  - role: ao_workflows
+    var: ao_workflows
+    tags:
+      - workflows
+      - ao_workflows
+  - role: ao_tools
+    var: ao_tools
+    tags:
+      - tools
+      - ao_tools
+
+ao_configuration_dispatcher_exclude_roles: []
+...

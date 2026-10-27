@@ -1,0 +1,13 @@
+=========================================
+zjleblanc.ao\_configuration Release Notes
+=========================================
+
+.. contents:: Topics
+
+v0.1.0
+======
+
+Release Summary
+---------------
+
+Initial release of the zjleblanc.ao_configuration collection. Provides resource-based roles, a dispatch role, global_vars, and wildcard variable merging for configuring Automation Orchestrator as code, following the patterns established by infra.aap_configuration. Includes roles for settings, identity providers, projects, credentials, users, groups, service accounts, roles, policies, role assignments, integrations, workflows, and tools, plus an ao_auth role that transparently manages AO's short-lived JWT authentication (client_credentials or username/password login).
