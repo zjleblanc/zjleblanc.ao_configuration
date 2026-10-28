@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   role_name: global_vars
-  author: Zack LeBlanc
+  author: Zach LeBlanc
   description: Global variables to be consumed by any other role in the collection
 
   license: GPL-3.0-or-later

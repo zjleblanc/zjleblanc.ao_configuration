@@ -70,4 +70,4 @@ merged into its base resource variable.
 
 ## Author
 
-[Zack LeBlanc](https://github.com/zjleblanc)
+[Zach LeBlanc](https://github.com/zjleblanc)

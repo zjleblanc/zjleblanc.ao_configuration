@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   role_name: ao_service_accounts
-  author: Zack LeBlanc
+  author: Zach LeBlanc
   description: An Ansible Role to create/update/remove/enable/disable Service Accounts on Automation Orchestrator.
 
   license: GPL-3.0-or-later

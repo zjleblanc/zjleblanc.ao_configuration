@@ -106,4 +106,4 @@ Like `infra.aap_configuration`, you may split configuration across environment-s
 
 ## Author
 
-[Zack LeBlanc](https://github.com/zjleblanc)
+[Zach LeBlanc](https://github.com/zjleblanc)

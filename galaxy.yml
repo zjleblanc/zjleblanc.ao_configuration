@@ -1,11 +1,11 @@
 ---
 namespace: zjleblanc
 name: ao_configuration
-version: 0.1.0
+version: 0.1.1
 description: A collection of roles to manage Automation Orchestrator (AO) with code
 readme: README.md
 authors:
-  - Zack LeBlanc
+  - Zach LeBlanc
 repository: https://github.com/zjleblanc/zjleblanc.ao_configuration
 issues: https://github.com/zjleblanc/zjleblanc.ao_configuration/issues
 build_ignore:

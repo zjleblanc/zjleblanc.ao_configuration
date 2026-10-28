@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   role_name: ao_auth
-  author: Zack LeBlanc
+  author: Zach LeBlanc
   description: Acquires and caches a short-lived AO access token for use by every other role in the collection.
 
   license: GPL-3.0-or-later

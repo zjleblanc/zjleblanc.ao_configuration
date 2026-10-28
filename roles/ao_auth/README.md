@@ -46,4 +46,4 @@ the preferred method for unattended automation via a service account. Otherwise,
 
 ## Author
 
-[Zack LeBlanc](https://github.com/zjleblanc)
+[Zach LeBlanc](https://github.com/zjleblanc)

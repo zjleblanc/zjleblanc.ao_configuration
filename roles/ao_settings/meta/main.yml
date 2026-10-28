@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   role_name: ao_settings
-  author: Zack LeBlanc
+  author: Zach LeBlanc
   description: An Ansible Role to update runtime settings on Automation Orchestrator.
 
   license: GPL-3.0-or-later

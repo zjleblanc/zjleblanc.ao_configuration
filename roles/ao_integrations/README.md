@@ -101,4 +101,4 @@ ao_integrations:
 
 ## Author
 
-[Zack LeBlanc](https://github.com/zjleblanc)
+[Zach LeBlanc](https://github.com/zjleblanc)

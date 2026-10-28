@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   role_name: dispatch
-  author: Zack LeBlanc
+  author: Zach LeBlanc
   description: An Ansible Role which launches all of the roles within the ao_configuration Collection.
 
   license: GPL-3.0-or-later

@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   role_name: ao_roles
-  author: Zack LeBlanc
+  author: Zach LeBlanc
   description: An Ansible Role to create/update/remove RBAC Roles on Automation Orchestrator.
 
   license: GPL-3.0-or-later

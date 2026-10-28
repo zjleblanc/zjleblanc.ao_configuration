@@ -98,4 +98,4 @@ ao_credentials:
 
 ## Author
 
-[Zack LeBlanc](https://github.com/zjleblanc)
+[Zach LeBlanc](https://github.com/zjleblanc)
